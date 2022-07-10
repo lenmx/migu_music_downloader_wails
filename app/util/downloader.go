@@ -1,46 +1,67 @@
 package util
 
 import (
+	"context"
 	"github.com/go-resty/resty/v2"
+	"migu_music_downloader_wails/app/consts"
 	"migu_music_downloader_wails/app/model"
 	"time"
 )
 
 type Downloader struct {
-	queue    chan model.DownloadQueueItem
-	ResultCh chan model.BaseResponse
+	queue chan model.DownloadQueueItem
+	onResult func(response model.BaseResponse)
 }
 
 var downloader *Downloader
 
-func NewDownloader(count int) *Downloader {
+func NewDownloader(onResultCallback func(response model.BaseResponse), count int) *Downloader {
 	if downloader != nil {
 		return downloader
 	}
 
 	return &Downloader{
 		queue:    make(chan model.DownloadQueueItem, count),
-		ResultCh: make(chan model.BaseResponse, count),
+		onResult: onResultCallback,
 	}
 }
 
-func (d *Downloader) Push(item model.DownloadQueueItem) {
-	d.queue <- item
+func (d *Downloader) Push(ctx context.Context, item model.DownloadQueueItem) {
+	go func() {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			d.queue <- item
+		}
+	}()
 }
 
 func (d *Downloader) Run() {
+	exit := false
+
 	for {
 		select {
 		case item, ok := <-d.queue:
 			if !ok {
-				return
+				d.queue = make(chan model.DownloadQueueItem)
+				exit = true
+			} else {
+				go d.download(item)
+				time.Sleep(time.Second * 1)
 			}
-
-			go d.download(item)
-			time.Sleep(time.Second * 1)
 		default:
+			time.Sleep(consts.LoopInterval)
+		}
+
+		if exit {
+			break
 		}
 	}
+}
+
+func (d *Downloader) Stop() {
+	close(d.queue)
 }
 
 func (d *Downloader) download(data model.DownloadQueueItem) {
@@ -52,5 +73,7 @@ func (d *Downloader) download(data model.DownloadQueueItem) {
 		resp.Message = "下载失败：" + err.Error()
 	}
 
-	d.ResultCh <- resp
+	if d.onResult != nil {
+		d.onResult(resp)
+	}
 }

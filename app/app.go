@@ -13,39 +13,40 @@ import (
 )
 
 type App struct {
-	ctx         context.Context
-	SearchUrl   string
-	DownloadUrl string
+	ctx    context.Context
+	cancel context.CancelFunc
 
-	Downloader *util.Downloader
+	searchUrl   string
+	downloadUrl string
+
+	downloader *util.Downloader
 }
 
 func NewApp(searchUrl, downloadUrl string) *App {
-	d := util.NewDownloader(10)
-	go d.Run()
-
 	app := &App{
-		SearchUrl:   searchUrl,
-		DownloadUrl: downloadUrl,
-		Downloader:  d,
+		searchUrl:   searchUrl,
+		downloadUrl: downloadUrl,
 	}
 
-	go app.watchDownloadResult()
+	d := util.NewDownloader(app.OnDownloadResult, 10)
+	app.downloader = d
+	go app.downloader.Run()
+
 	return app
 }
 
 func (a *App) Startup(ctx context.Context) {
-	a.ctx = ctx
+	a.ctx, a.cancel = context.WithCancel(ctx)
 }
 
 func (a *App) OnSearch(keyword string, pageIndex, pageSize int) model.BaseResponse {
 	res, err := a.search(keyword, pageIndex, pageSize)
 	if err != nil {
-		return a.Error(err.Error())
+		return a.genError(err.Error())
 	}
 
 	if res.Code != consts.SearchSuccess {
-		return a.Error(res.Info)
+		return a.genError(res.Info)
 	}
 
 	total, _ := strconv.Atoi(res.SongResultData.TotalCount)
@@ -54,14 +55,14 @@ func (a *App) OnSearch(keyword string, pageIndex, pageSize int) model.BaseRespon
 		Items: res.SongResultData.Result,
 	}
 
-	return a.Ok(resp)
+	return a.genOk(resp)
 }
 
 func (a *App) OnDownload(sourceType string, downloadItemsJson string) model.BaseResponse {
 	var items []model.DownloadItem
 	err := json.Unmarshal([]byte(downloadItemsJson), &items)
 	if err != nil {
-		return a.Error(err.Error())
+		return a.genError(err.Error())
 	}
 
 	path, _ := runtime.OpenDirectoryDialog(a.ctx, runtime.OpenDialogOptions{
@@ -75,7 +76,7 @@ func (a *App) OnDownload(sourceType string, downloadItemsJson string) model.Base
 		TreatPackagesAsDirectories: false,
 	})
 	if len(path) <= 0 {
-		return a.Error("取消下载")
+		return a.genError("取消下载")
 	}
 
 	for _, item := range items {
@@ -83,12 +84,18 @@ func (a *App) OnDownload(sourceType string, downloadItemsJson string) model.Base
 		a.download(sourceType, path, item)
 	}
 
-	return a.Ok(nil)
+	return a.genOk(nil)
+}
+
+func (a *App) OnDownloadResult(res model.BaseResponse) {
+	item := res.Data.(model.DownloadQueueItem)
+	a.log(fmt.Sprintf("[%s]%s", item.Name, res.Message))
+	a.pushDownloadResult(res)
 }
 
 func (a *App) search(keyword string, pageIndex, pageSize int) (*model.SearchRes, error) {
 	// http://pd.musicapp.migu.cn/MIGUM2.0/v1.0/content/search_all.do?ua=Android_migu&version=5.0.1&pageNo=1&pageSize=10&text=周杰伦&searchSwitch=
-	url := fmt.Sprintf(a.SearchUrl, pageIndex, pageSize, keyword)
+	url := fmt.Sprintf(a.searchUrl, pageIndex, pageSize, keyword)
 
 	res, err := resty.New().R().Get(url)
 	if err != nil {
@@ -115,32 +122,16 @@ func (a *App) download(sourceType, path string, item model.DownloadItem) {
 	}
 
 	path += item.Name + consts.SourceType2FileExt[_sourceType]
-	url := fmt.Sprintf(a.DownloadUrl, string(_sourceType), item.ContentId)
+	url := fmt.Sprintf(a.downloadUrl, string(_sourceType), item.ContentId)
 
-	a.Downloader.Push(model.DownloadQueueItem{
+	a.downloader.Push(a.ctx, model.DownloadQueueItem{
 		DownloadItem: item,
 		Path:         path,
 		Url:          url,
 	})
 }
 
-func (a *App) watchDownloadResult() {
-	for {
-		select {
-		case res, ok := <-a.Downloader.ResultCh:
-			if !ok {
-				return
-			}
-
-			item := res.Data.(model.DownloadQueueItem)
-			a.log(fmt.Sprintf("[%s]%s", item.Name, res.Message))
-			a.pushDownloadResult(res)
-		default:
-		}
-	}
-}
-
-func (a *App) Ok(data interface{}) model.BaseResponse {
+func (a *App) genOk(data interface{}) model.BaseResponse {
 	return model.BaseResponse{
 		Code:    0,
 		Message: "",
@@ -148,7 +139,7 @@ func (a *App) Ok(data interface{}) model.BaseResponse {
 	}
 }
 
-func (a *App) Error(message string) model.BaseResponse {
+func (a *App) genError(message string) model.BaseResponse {
 	return model.BaseResponse{
 		Code:    -1,
 		Message: message,
@@ -162,4 +153,9 @@ func (a *App) log(message string) {
 
 func (a *App) pushDownloadResult(response model.BaseResponse) {
 	util.PushDownloadResult(a.ctx, response)
+}
+
+func (a *App) Stop(ctx context.Context) {
+	a.cancel()
+	a.downloader.Stop()
 }

@@ -1,5 +1,7 @@
 package consts
 
+import "time"
+
 type SourceType string
 
 const (
@@ -23,4 +25,5 @@ const (
 
 const (
 	SearchSuccess = "000000"
+	LoopInterval  = time.Second * 1
 )

@@ -26,6 +26,7 @@ func main() {
 		Bind: []interface{}{
 			application,
 		},
+		OnShutdown: application.Stop,
 	})
 
 	if err != nil {

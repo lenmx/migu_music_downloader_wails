@@ -60,19 +60,25 @@ const columns = [
   {
     title: '名称',
     dataIndex: 'name',
+    ellipsis: true,
   },
   {
     title: '歌手',
+    width: 180,
     dataIndex: 'singers',
+    ellipsis: true,
   },
   {
     title: '专辑',
+    width: 180,
     dataIndex: 'albums',
+    ellipsis: true,
   },
   {
     title: '操作',
     dataIndex: 'action',
     align: 'center',
+    width: 200,
     scopedSlots: {customRender: 'action'},
   },
 ];
@@ -145,8 +151,8 @@ export default {
           return {
             contentId: a.contentId,
             name: a.name,
-            singers: a.singers.map(s => s.name).toString(),
-            albums: a.albums.map(s => s.name).toString(),
+            singers: !a.singers ? '' : a.singers.map(s => s.name).toString(),
+            albums: !a.albums ? '' : a.albums.map(s => s.name).toString(),
           }
         });
       })
