@@ -1,4 +1,4 @@
-package main
+package consts
 
 type SourceType string
 
@@ -14,6 +14,13 @@ var (
 	}
 )
 
+type EventType string
+
 const (
-	searchSuccess = "000000"
+	EventType_Log            EventType = "log"
+	EventType_DownloadResult EventType = "download_result"
+)
+
+const (
+	SearchSuccess = "000000"
 )

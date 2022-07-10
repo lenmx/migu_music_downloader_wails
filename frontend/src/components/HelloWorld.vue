@@ -53,7 +53,7 @@
 </template>
 
 <script>
-import {OnDownload, OnSearch} from '../../wailsjs/go/main/App.js'
+import {OnDownload, OnSearch} from '../../wailsjs/go/app/App.js'
 import {EventsOn} from '../../wailsjs/runtime/runtime.js'
 
 const columns = [

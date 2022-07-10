@@ -1,6 +1,4 @@
-package main
-
-import "context"
+package model
 
 type SearchRes struct {
 	Code           string `json:"code"`
@@ -49,8 +47,6 @@ type DownloadQueueItem struct {
 	DownloadItem
 	Path string `json:"path"`
 	Url  string `json:"url"`
-
-	ctx context.Context
 }
 
 type BaseResponse struct {

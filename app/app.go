@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"context"
@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"github.com/go-resty/resty/v2"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
+	"migu_music_downloader_wails/app/consts"
+	"migu_music_downloader_wails/app/model"
+	"migu_music_downloader_wails/app/util"
 	"strconv"
 )
 
@@ -14,37 +17,39 @@ type App struct {
 	SearchUrl   string
 	DownloadUrl string
 
-	Downloader *Downloader
-	//queue chan DownloadQueueItem
+	Downloader *util.Downloader
 }
 
 func NewApp(searchUrl, downloadUrl string) *App {
-	d := NewDownloader(10)
+	d := util.NewDownloader(10)
 	go d.Run()
 
-	return &App{
+	app := &App{
 		SearchUrl:   searchUrl,
 		DownloadUrl: downloadUrl,
 		Downloader:  d,
 	}
+
+	go app.watchDownloadResult()
+	return app
 }
 
-func (a *App) startup(ctx context.Context) {
+func (a *App) Startup(ctx context.Context) {
 	a.ctx = ctx
 }
 
-func (a *App) OnSearch(keyword string, pageIndex, pageSize int) BaseResponse {
+func (a *App) OnSearch(keyword string, pageIndex, pageSize int) model.BaseResponse {
 	res, err := a.search(keyword, pageIndex, pageSize)
 	if err != nil {
 		return a.Error(err.Error())
 	}
 
-	if res.Code != searchSuccess {
+	if res.Code != consts.SearchSuccess {
 		return a.Error(res.Info)
 	}
 
 	total, _ := strconv.Atoi(res.SongResultData.TotalCount)
-	resp := &PageRes{
+	resp := &model.PageRes{
 		Total: total,
 		Items: res.SongResultData.Result,
 	}
@@ -52,8 +57,8 @@ func (a *App) OnSearch(keyword string, pageIndex, pageSize int) BaseResponse {
 	return a.Ok(resp)
 }
 
-func (a *App) OnDownload(sourceType string, downloadItemsJson string) BaseResponse {
-	var items []DownloadItem
+func (a *App) OnDownload(sourceType string, downloadItemsJson string) model.BaseResponse {
+	var items []model.DownloadItem
 	err := json.Unmarshal([]byte(downloadItemsJson), &items)
 	if err != nil {
 		return a.Error(err.Error())
@@ -74,14 +79,14 @@ func (a *App) OnDownload(sourceType string, downloadItemsJson string) BaseRespon
 	}
 
 	for _, item := range items {
-		a.Log("添加成功 " + item.Name)
+		a.log(fmt.Sprintf("[%s]添加成功 ", item.Name))
 		a.download(sourceType, path, item)
 	}
 
 	return a.Ok(nil)
 }
 
-func (a *App) search(keyword string, pageIndex, pageSize int) (*SearchRes, error) {
+func (a *App) search(keyword string, pageIndex, pageSize int) (*model.SearchRes, error) {
 	// http://pd.musicapp.migu.cn/MIGUM2.0/v1.0/content/search_all.do?ua=Android_migu&version=5.0.1&pageNo=1&pageSize=10&text=周杰伦&searchSwitch=
 	url := fmt.Sprintf(a.SearchUrl, pageIndex, pageSize, keyword)
 
@@ -90,7 +95,7 @@ func (a *App) search(keyword string, pageIndex, pageSize int) (*SearchRes, error
 		return nil, err
 	}
 
-	var resp SearchRes
+	var resp model.SearchRes
 	err = json.Unmarshal(res.Body(), &resp)
 	if err != nil {
 		return nil, err
@@ -99,43 +104,62 @@ func (a *App) search(keyword string, pageIndex, pageSize int) (*SearchRes, error
 	return &resp, nil
 }
 
-func (a *App) download(sourceType, path string, item DownloadItem) {
-	_sourceType := SourceType_HQ
+func (a *App) download(sourceType, path string, item model.DownloadItem) {
+	_sourceType := consts.SourceType_HQ
 	if sourceType == "SQ" {
-		_sourceType = SourceType_SQ
+		_sourceType = consts.SourceType_SQ
 	}
 
 	if path[len(path)-1] != '/' {
 		path += "/"
 	}
 
-	path += item.Name + SourceType2FileExt[_sourceType]
-	url := fmt.Sprintf(a.DownloadUrl, string(sourceType), item.ContentId)
+	path += item.Name + consts.SourceType2FileExt[_sourceType]
+	url := fmt.Sprintf(a.DownloadUrl, string(_sourceType), item.ContentId)
 
-	a.Downloader.Push(DownloadQueueItem{
+	a.Downloader.Push(model.DownloadQueueItem{
 		DownloadItem: item,
 		Path:         path,
 		Url:          url,
-		ctx:          a.ctx,
 	})
 }
 
-func (a *App) Ok(data interface{}) BaseResponse {
-	return BaseResponse{
+func (a *App) watchDownloadResult() {
+	for {
+		select {
+		case res, ok := <-a.Downloader.ResultCh:
+			if !ok {
+				return
+			}
+
+			item := res.Data.(model.DownloadQueueItem)
+			a.log(fmt.Sprintf("[%s]%s", item.Name, res.Message))
+			a.pushDownloadResult(res)
+		default:
+		}
+	}
+}
+
+func (a *App) Ok(data interface{}) model.BaseResponse {
+	return model.BaseResponse{
 		Code:    0,
 		Message: "",
 		Data:    data,
 	}
 }
 
-func (a *App) Error(message string) BaseResponse {
-	return BaseResponse{
+func (a *App) Error(message string) model.BaseResponse {
+	return model.BaseResponse{
 		Code:    -1,
 		Message: message,
 		Data:    nil,
 	}
 }
 
-func (a *App) Log(message string) {
-	runtime.EventsEmit(a.ctx, "log", message)
+func (a *App) log(message string) {
+	util.Log(a.ctx, message)
+}
+
+func (a *App) pushDownloadResult(response model.BaseResponse) {
+	util.PushDownloadResult(a.ctx, response)
 }
