@@ -38,15 +38,26 @@ type PageRes struct {
 	Items interface{} `json:"items"`
 }
 
+type Setting struct {
+	SavePath      string `json:"savePath",yaml:"savePath"`
+	DownloadLrc   bool   `json:"downloadLrc",yaml:"downloadLrc"`
+	DownloadCover bool   `json:"downloadCover",yaml:"downloadCover"`
+}
+
 type DownloadItem struct {
 	ContentId string `json:"contentId"`
 	Name      string `json:"name"`
+	LrcUrl    string `json:"lrcUrl"`
+	Cover     string `json:"cover"`
 }
 
 type DownloadQueueItem struct {
 	DownloadItem
 	Path string `json:"path"`
 	Url  string `json:"url"`
+
+	DownloadLrc   bool
+	DownloadCover bool
 }
 
 type BaseResponse struct {

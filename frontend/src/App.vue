@@ -1,6 +1,5 @@
 <template>
   <div id="app">
-    <h1>MiguMusic Downloader</h1>
     <HelloWorld/>
   </div>
 </template>
@@ -23,6 +22,10 @@ export default {
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
   color: #2c3e50;
-  margin: 30px 20px 10px 20px;
+  padding: 16px 0 20px 0;
+}
+
+#app>div {
+  margin: 0 20px;
 }
 </style>

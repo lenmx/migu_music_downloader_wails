@@ -5,6 +5,7 @@ go 1.17
 require (
 	github.com/go-resty/resty/v2 v2.7.0
 	github.com/wailsapp/wails/v2 v2.0.0-beta.38
+	gopkg.in/yaml.v2 v2.3.0
 )
 
 require (
