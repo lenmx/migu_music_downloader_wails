@@ -183,43 +183,54 @@ export default {
         this.pagination.current = this.searchForm.pageIndex;
         this.pagination.total = res.data.total;
         this.searchRes = res.data.items.map(a => {
+          let hqUrl = a.rateFormats ? a.rateFormats.find(a => a.formatType == 'HQ') : null
+          let sqUrl = a.rateFormats ? a.rateFormats.find(a => a.formatType == 'SQ') : null
+
           return {
             contentId: a.contentId,
             name: a.name,
             singers: !a.singers ? '' : a.singers.map(s => s.name).toString(),
             albums: !a.albums ? '' : a.albums.map(s => s.name).toString(),
-            // "lyricUrl": "http://d.musicapp.migu.cn/prod/file-service/file-down01/4eedd78464c21ce789dea6928415b323/9e77e0efb0da34b1fd9ac249c5461800/19a5875f913d81dce77027f48b25793b",
-            // "trcUrl": "",
-            // "imgItems": [
-            //   {
-            //     "imgSizeType": "03",
-            //     "img": "http://d.musicapp.migu.cn/prod/file-service/file-down01/8121e8df41a5c12f48b69aea89b71dab/6e525366c0353c7e7080f2a951c30dd7/8f031d2be65eb81d061c2f4387a2f015"
-            //   },
+            hqUrl: hqUrl ? hqUrl.url.replace('ftp://218.200.160.122:21', 'http://freetyst.nf.migu.cn') : '',
+            sqUrl: sqUrl ? sqUrl.androidUrl.replace('ftp://218.200.160.122:21', 'http://freetyst.nf.migu.cn') : '',
             lrcUrl: a.lyricUrl,
-            cover: !a.imgItems || a.imgItems.length <= 0 ? '' : a.imgItems[0].img
+            cover: !a.imgItems || a.imgItems.length <= 0 ? '' : a.imgItems[0].img,
           }
         });
       })
     },
     onDownload(sourceType, record) {
+      let url = record.sqUrl
+      if (sourceType == 'HQ') {
+        url = record.hqUrl
+      }
+
       let items = [{
         contentId: record.contentId,
         name: record.name,
+        url: url,
         lrcUrl: record.lrcUrl,
         cover: record.cover,
       }]
+
       OnDownload(sourceType, JSON.stringify(items)).then(res => {
         if (res.code < 0) this.$message.error('添加到下载中心失败: ' + res.message);
         else this.$message.success('添加成功');
       })
     },
     onBatchDownload(sourceType) {
-      let items = this.searchRes.filter(a => this.selectedRowKeys.indexOf(a.contentId) != -1).map(a => {
+      let items = this.searchRes.filter(a => this.selectedRowKeys.indexOf(a.contentId) != -1).map(record => {
+        let url = record.sqUrl
+        if (sourceType == 'HQ') {
+          url = record.hqUrl
+        }
+
         return {
-          contentId: a.contentId,
-          name: a.name,
-          lrcUrl: a.lrcUrl,
-          cover: a.cover,
+          contentId: record.contentId,
+          name: record.name,
+          url: url,
+          lrcUrl: record.lrcUrl,
+          cover: record.cover,
         }
       })
 
@@ -244,7 +255,6 @@ export default {
     },
     onDownloadResult(data) {
       let _data = JSON.parse(data)
-      console.log('_data: ', _data)
       this.downloadResults = [_data, ...this.downloadResults]
     },
     onToggleDownloadPanel(visible) {
@@ -266,7 +276,6 @@ export default {
     },
     onSetSetting() {
       let data = JSON.stringify(this.settingForm)
-      console.log('on set setting: ', data)
       OnSetSetting(data).then(res => {
         if (res.code < 0) {
           this.$message.error(res.message);
@@ -279,7 +288,6 @@ export default {
     },
     onGetSetting() {
       OnGetSetting().then(res => {
-        console.log('on get setting: ', res)
         if (res.code < 0)
           return
 

@@ -64,6 +64,7 @@ func (a *App) OnSearch(keyword string, pageIndex, pageSize int) model.BaseRespon
 }
 
 func (a *App) OnDownload(sourceType string, downloadItemsJson string) model.BaseResponse {
+	a.log("receive item: "+ downloadItemsJson)
 	var items []model.DownloadItem
 	err := json.Unmarshal([]byte(downloadItemsJson), &items)
 	if err != nil {
@@ -99,7 +100,7 @@ func (a *App) OnDownload(sourceType string, downloadItemsJson string) model.Base
 
 	for _, item := range items {
 		a.download(sourceType, path, item, downloadLrc, downloadCover)
-		a.log(fmt.Sprintf("[%s]添加成功 ", item.Name))
+		a.log(fmt.Sprintf("[%s]添加成功 %s", item.Name, item.Url))
 	}
 
 	return a.genOk(nil)
@@ -283,12 +284,11 @@ func (a *App) download(sourceType, path string, item model.DownloadItem, downloa
 	}
 
 	path += item.Name + consts.SourceType2FileExt[_sourceType]
-	url := fmt.Sprintf(a.downloadUrl, string(_sourceType), item.ContentId)
+	//url := fmt.Sprintf(a.downloadUrl, string(_sourceType), item.ContentId)
 
 	a.downloader.Push(a.ctx, model.DownloadQueueItem{
 		DownloadItem:  item,
 		Path:          path,
-		Url:           url,
 		DownloadLrc:   downloadLrc,
 		DownloadCover: downloadCover,
 	})
