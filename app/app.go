@@ -189,38 +189,28 @@ func (a *App) setSetting(setting model.Setting) error {
 		os.MkdirAll(a.configPath, os.ModePerm)
 	}
 
+	var file *os.File
 	filename := a.configPath + "/conf.yaml"
 	_, err := os.Stat(filename)
 	if err != nil {
 		if os.IsNotExist(err) {
-			file, err := os.Create(filename)
+			file, err = os.Create(filename)
 			if err != nil {
 				return err
 			}
 			defer file.Close()
-
-			setting := model.Setting{
-				SavePath:      "",
-				DownloadLrc:   false,
-				DownloadCover: false,
-			}
-			settingJson, _ := yaml.Marshal(setting)
-			_, err = file.Write(settingJson)
-			if err != nil {
-				return err
-			}
-
-			return nil
 		} else {
 			return err
 		}
 	}
 
-	file, err := os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, consts.DefaultPermOpen)
-	if err != nil {
-		return err
+	if file == nil {
+		file, err = os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, consts.DefaultPermOpen)
+		if err != nil {
+			return err
+		}
+		defer file.Close()
 	}
-	defer file.Close()
 
 	settingJson, _ := yaml.Marshal(setting)
 	_, err = file.Write(settingJson)
