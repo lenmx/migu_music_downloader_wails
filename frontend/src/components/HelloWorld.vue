@@ -191,8 +191,8 @@ export default {
             name: a.name,
             singers: !a.singers ? '' : a.singers.map(s => s.name).toString(),
             albums: !a.albums ? '' : a.albums.map(s => s.name).toString(),
-            hqUrl: hqUrl ? hqUrl.url.replace('ftp://218.200.160.122:21', 'http://freetyst.nf.migu.cn') : '',
-            sqUrl: sqUrl ? sqUrl.androidUrl.replace('ftp://218.200.160.122:21', 'http://freetyst.nf.migu.cn') : '',
+            hqUrl: hqUrl && hqUrl.url ? hqUrl.url.replace('ftp://218.200.160.122:21', 'http://freetyst.nf.migu.cn') : '',
+            sqUrl: sqUrl && sqUrl.androidUrl ? sqUrl.androidUrl.replace('ftp://218.200.160.122:21', 'http://freetyst.nf.migu.cn') : '',
             lrcUrl: a.lyricUrl,
             cover: !a.imgItems || a.imgItems.length <= 0 ? '' : a.imgItems[0].img,
           }
