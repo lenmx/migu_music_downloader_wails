@@ -6,7 +6,7 @@
     </div>
     <h1 class="title">MiguMusic Downloader</h1>
     <div class="search-container">
-      <a-input-search placeholder="请输入关键字" v-model="searchForm.keyword" enter-button @search="onSearch"/>
+      <a-input-search placeholder="请输入关键字" v-model="searchForm.keyword" enter-button @search="searchForm.pageIndex=1; onSearch()"/>
     </div>
     <div class="tool-container">
       <a-button type="default" @click="onBatchDownload('SQ')">下载选中无损</a-button>
@@ -79,7 +79,7 @@
 </template>
 
 <script>
-import {OnDownload, OnGetSetting, OnSearch, OnSelectSavePath, OnSetSetting} from '../../wailsjs/go/app/App.js'
+import {OnDownload, OnGetSetting, OnSearch, OnSelectSavePath, OnSetSetting} from '../../wailsjs/go/app/AppQQ.js'
 import {EventsOn} from '../../wailsjs/runtime/runtime.js'
 
 const columns = [
@@ -174,6 +174,7 @@ export default {
     onSearch() {
       this.loading = true
       OnSearch(this.searchForm.keyword, this.searchForm.pageIndex, this.searchForm.pageSize).then(res => {
+        console.log("on search: ", res)
         this.loading = false
         if (res.code < 0) {
           this.$message.error('搜索失败: ' + res.message);
@@ -183,18 +184,21 @@ export default {
         this.pagination.current = this.searchForm.pageIndex;
         this.pagination.total = res.data.total;
         this.searchRes = res.data.items.map(a => {
-          let hqUrl = a.rateFormats ? a.rateFormats.find(a => a.formatType == 'HQ') : null
-          let sqUrl = a.rateFormats ? a.rateFormats.find(a => a.formatType == 'SQ') : null
+          // let hqUrl = a.rateFormats ? a.rateFormats.find(a => a.formatType == 'HQ') : null
+          // let sqUrl = a.rateFormats ? a.rateFormats.find(a => a.formatType == 'SQ') : null
 
           return {
             contentId: a.contentId,
             name: a.name,
-            singers: !a.singers ? '' : a.singers.map(s => s.name).toString(),
-            albums: !a.albums ? '' : a.albums.map(s => s.name).toString(),
-            hqUrl: hqUrl && hqUrl.url ? hqUrl.url.replace('ftp://218.200.160.122:21', 'http://freetyst.nf.migu.cn') : '',
-            sqUrl: sqUrl && sqUrl.androidUrl ? sqUrl.androidUrl.replace('ftp://218.200.160.122:21', 'http://freetyst.nf.migu.cn') : '',
+            singers: !a.singers ? '' : a.singers.toString(),
+            albums: !a.albums ? '' : a.albums.toString(),
+            hqUrl: a.hqUrl && a.hqUrl.url ? a.hqUrl.url.replace('ftp://218.200.160.122:21', 'http://freetyst.nf.migu.cn') : '',
+            sqUrl: a.sqUrl && a.sqUrl.androidUrl ? a.sqUrl.androidUrl.replace('ftp://218.200.160.122:21', 'http://freetyst.nf.migu.cn') : '',
             lrcUrl: a.lyricUrl,
             cover: !a.imgItems || a.imgItems.length <= 0 ? '' : a.imgItems[0].img,
+            mid: a.mid,
+            file: a.file,
+            fileInfos: a.fileInfos,
           }
         });
       })
@@ -211,7 +215,12 @@ export default {
         url: url,
         lrcUrl: record.lrcUrl,
         cover: record.cover,
+        mid: record.mid,
+        file: record.file,
+        fileInfos: record.fileInfos,
       }]
+
+      console.log('items: ', items, record)
 
       OnDownload(sourceType, JSON.stringify(items)).then(res => {
         if (res.code < 0) this.$message.error('添加到下载中心失败: ' + res.message);
@@ -231,6 +240,9 @@ export default {
           url: url,
           lrcUrl: record.lrcUrl,
           cover: record.cover,
+          mid: record.mid,
+          file: record.file,
+          fileInfos: record.fileInfos,
         }
       })
 

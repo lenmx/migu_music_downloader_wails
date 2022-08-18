@@ -86,11 +86,16 @@ type Setting struct {
 }
 
 type DownloadItem struct {
-	ContentId string `json:"contentId"`
+	ContentId int    `json:"contentId"`
 	Name      string `json:"name"`
 	Url       string `json:"url"`
 	LrcUrl    string `json:"lrcUrl"`
 	Cover     string `json:"cover"`
+
+	Mid        string              `json:"mid"`
+	File       SearchFile          `json:"file"`
+	FileInfos  map[string]FileInfo `json:"fileInfos"`
+	LrcContent string              `json:"lrcContent"`
 }
 
 type DownloadQueueItem struct {

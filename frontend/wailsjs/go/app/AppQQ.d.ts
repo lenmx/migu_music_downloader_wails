@@ -4,8 +4,6 @@ import {model} from '../models';
 
 export function OnDownload(arg1:string,arg2:string):Promise<model.BaseResponse>;
 
-export function OnDownloadResult(arg1:model.BaseResponse):void;
-
 export function OnGetSetting():Promise<model.BaseResponse>;
 
 export function OnSearch(arg1:string,arg2:number,arg3:number):Promise<model.BaseResponse>;

@@ -5,6 +5,7 @@ import (
 	"github.com/go-resty/resty/v2"
 	"migu_music_downloader_wails/app/consts"
 	"migu_music_downloader_wails/app/model"
+	"os"
 	"strings"
 	"time"
 )
@@ -78,6 +79,14 @@ func (d *Downloader) download(data model.DownloadQueueItem) {
 	if data.DownloadLrc && len(data.LrcUrl) > 0 {
 		path := data.Path[:idx] + ".lrc"
 		resty.New().R().SetOutput(path).Get(data.LrcUrl)
+	}
+	if data.DownloadLrc && len(data.LrcContent) > 0 {
+		path := data.Path[:idx] + ".lrc"
+		file, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, os.ModePerm)
+		if err == nil {
+			defer file.Close()
+			file.WriteString(data.LrcContent)
+		}
 	}
 	if data.DownloadCover && len(data.Cover) > 0 {
 		path := data.Path[:idx] + ".png"
