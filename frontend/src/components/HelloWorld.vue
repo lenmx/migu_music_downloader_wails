@@ -6,7 +6,7 @@
     </div>
     <h1 class="title">MiguMusic Downloader</h1>
     <div class="search-container">
-      <a-input-search placeholder="请输入关键字" v-model="searchForm.keyword" enter-button @search="searchForm.pageIndex=1; onSearch()"/>
+      <a-input-search placeholder="请输入关键字" v-model="searchForm.keyword" enter-button @search="onResearch"/>
     </div>
     <div class="tool-container">
       <a-button type="default" @click="onBatchDownload('SQ')">下载选中无损</a-button>
@@ -171,6 +171,11 @@ export default {
     this.onGetSetting()
   },
   methods: {
+    onResearch() {
+      this.searchForm.pageIndex = 1
+      this.selectedRowKeys = []
+      this.onSearch()
+    },
     onSearch() {
       this.loading = true
       OnSearch(this.searchForm.keyword, this.searchForm.pageIndex, this.searchForm.pageSize).then(res => {
