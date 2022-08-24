@@ -1,6 +1,7 @@
 package app
 
 import (
+	"migu_music_downloader_wails/app/i18n"
 	"os"
 	"testing"
 )
@@ -49,4 +50,11 @@ func TestSearch(t *testing.T) {
 
 	res := app.OnSearch("jay", 1, 10)
 	t.Log(res)
+}
+
+func TestTr(t *testing.T) {
+	i18 := i18n.New("zh")
+	i18.LoadFile(LocaleFS, "i18n/locale.zh.json", "zh")
+	tmp := i18.Parse("frontend.InputSearchKeyWord")
+	t.Log(tmp)
 }

@@ -1,0 +1,44 @@
+{
+  "frontend": {
+    "Language": "language",
+    "LanguageZh": "Chinese",
+    "LanguageEn": "English",
+    "InputSearchKeyword": "input search keyword",
+    "DownloadSelectFlac": "download selected FLAC",
+    "DownloadSelectMP3": "download selected MP3",
+    "DownloadFlac": "FLAC",
+    "DownloadMP3": "MP3",
+    "Setting": "Setting",
+    "Ok": "Ok",
+    "Cancel": "Cancel",
+    "FileSavePath": "file save path",
+    "ChooseFileSavePath": "click to choose file save path",
+    "DownloadLrc": "download Lyric",
+    "DownloadCover": "download ",
+    "DownloadCenter": "Download Center",
+    "SearchFail": "search failed",
+    "AddToDownloadCenterFail": "add to download center failed",
+    "AddToDownloadCenterSuccess": "add to download center success",
+
+    "TableColName": "Title",
+    "TableColSingers": "Singers",
+    "TableColAlbums": "Albums",
+    "TableColOptions": "Options"
+  },
+
+  "server": {
+    "ApplicationInitFail": "application init failed",
+    "SearchFail": "search failed",
+    "ChooseFileSavePath": "click to choose file save path",
+    "ChooseFileSavePathFail": "choose file save path failed",
+    "CancelDownload": "cancel download",
+    "DownloadUrlParseFail": "download url parse failed",
+    "AddToDownloadCenterFail": "add to download center failed",
+    "AddToDownloadCenterSuccess": "add to download center success",
+    "SettingFail": "setting failed",
+    "NoSavePathChoose": "no save path choose",
+    "ConfigFileParseFail": "config file parse failed",
+    "LrcParseFail": "lyric parse failed"
+  }
+}
+

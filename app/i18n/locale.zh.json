@@ -1,0 +1,44 @@
+{
+  "frontend": {
+    "Language": "语言",
+    "LanguageZh": "中文",
+    "LanguageEn": "英文",
+    "InputSearchKeyword": "输入关键词查询",
+    "DownloadSelectFlac": "下载选中FLAC",
+    "DownloadSelectMP3": "下载选中MP3",
+    "DownloadFlac": "FLAC",
+    "DownloadMP3": "MP3",
+    "Setting": "设置",
+    "Ok": "确定",
+    "Cancel": "取消",
+    "FileSavePath": "文件保存路径",
+    "ChooseFileSavePath": "选择文件保存路径",
+    "DownloadLrc": "下载歌词",
+    "DownloadCover": "下载封面",
+    "DownloadCenter": "下载中心",
+    "SearchFail": "搜索失败",
+    "AddToDownloadCenterFail": "添加到下载中心失败",
+    "AddToDownloadCenterSuccess": "添加到下载中心成功",
+
+    "TableColName": "名称",
+    "TableColSingers": "歌手",
+    "TableColAlbums": "专辑",
+    "TableColOptions": "操作"
+  },
+
+  "server": {
+    "ApplicationInitFail": "初始化失败",
+    "SearchFail": "搜索失败",
+    "ChooseFileSavePath": "选择文件保存路径",
+    "ChooseFileSavePathFail": "选择文件保存路径失败",
+    "CancelDownload": "取消下载",
+    "DownloadUrlParseFail": "下载地址解析失败",
+    "AddToDownloadCenterFail": "添加到下载中心失败",
+    "AddToDownloadCenterSuccess": "添加到下载中心成功",
+    "SettingFail": "设置失败",
+    "NoSavePathChoose": "未选择保存路径",
+    "ConfigFileParseFail": "读取配置文件错误",
+    "LrcParseFail": "歌词解析失败"
+  }
+}
+

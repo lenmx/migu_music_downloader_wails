@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"embed"
 	"encoding/json"
 	"fmt"
 	"github.com/go-resty/resty/v2"
@@ -9,6 +10,7 @@ import (
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"migu_music_downloader_wails/app/consts"
+	"migu_music_downloader_wails/app/i18n"
 	"migu_music_downloader_wails/app/model"
 	"migu_music_downloader_wails/app/util"
 	"os"
@@ -18,6 +20,7 @@ import (
 type AppQQ struct {
 	ctx    context.Context
 	cancel context.CancelFunc
+	i18n   *i18n.I18n
 
 	searchUrl   string
 	downloadUrl string
@@ -27,17 +30,34 @@ type AppQQ struct {
 	downloader *util.Downloader
 }
 
-func NewAppQQ(searchUrl, downloadUrl, configPath string) *AppQQ {
+//go:embed i18n/locale.*.json
+var LocaleFS embed.FS
+
+func NewAppQQ(searchUrl, downloadUrl, configPath string) (*AppQQ, error) {
 	app := &AppQQ{
+		i18n:        i18n.New("en"),
 		searchUrl:   searchUrl,
 		downloadUrl: downloadUrl,
 		configPath:  configPath,
+	}
+
+	_, err := app.i18n.LoadFile(LocaleFS, "i18n/locale.zh.json", "zh")
+	if err != nil {
+		fmt.Println("初始化失败", err)
+		return nil, err
+	}
+
+	_, err = app.i18n.LoadFile(LocaleFS, "i18n/locale.en.json", "en")
+	if err != nil {
+		fmt.Println("初始化失败", err)
+		return nil, err
 	}
 
 	// app core
 	core, err := NewAppQQCore()
 	if err != nil {
 		fmt.Println("初始化失败", err)
+		return nil, err
 	}
 	app.core = core
 
@@ -46,7 +66,7 @@ func NewAppQQ(searchUrl, downloadUrl, configPath string) *AppQQ {
 	app.downloader = d
 	go app.downloader.Run()
 
-	return app
+	return app, nil
 }
 
 func (a *AppQQ) Startup(ctx context.Context) {
@@ -60,7 +80,7 @@ func (a *AppQQ) OnSearch(keyword string, pageIndex, pageSize int) model.BaseResp
 	}
 
 	if res.Code != 0 {
-		return a.genError("搜索失败")
+		return a.genError(a.tr("SearchFail"))
 	}
 
 	items := []model.SearchQQItem{}
@@ -150,7 +170,7 @@ func (a *AppQQ) OnDownload(sourceType string, downloadItemsJson string) model.Ba
 		path, err = runtime.OpenDirectoryDialog(a.ctx, runtime.OpenDialogOptions{
 			DefaultDirectory:           "",
 			DefaultFilename:            "",
-			Title:                      "选择保存路径",
+			Title:                      a.tr("ChooseFileSavePath"),
 			Filters:                    nil,
 			ShowHiddenFiles:            false,
 			CanCreateDirectories:       false,
@@ -158,10 +178,10 @@ func (a *AppQQ) OnDownload(sourceType string, downloadItemsJson string) model.Ba
 			TreatPackagesAsDirectories: false,
 		})
 		if err != nil {
-			return a.genError("选择文件夹失败")
+			return a.genError(a.tr("ChooseFileSavePathFail"))
 		}
 		if len(path) <= 0 {
-			return a.genError("取消下载")
+			return a.genError(a.tr("CancelDownload"))
 		}
 	}
 	if path[len(path)-1] != '/' {
@@ -179,7 +199,7 @@ func (a *AppQQ) OnDownload(sourceType string, downloadItemsJson string) model.Ba
 			url, err = a.core.reGetMusicUrl(filename, item.Mid)
 		}
 		if err != nil {
-			a.log(fmt.Sprintf("[%s]下载地址解析失败", item.Name))
+			a.log(fmt.Sprintf("[%s]%s", item.Name, a.tr("DownloadUrlParseFail")))
 			continue
 		}
 
@@ -189,7 +209,7 @@ func (a *AppQQ) OnDownload(sourceType string, downloadItemsJson string) model.Ba
 			item.LrcContent, _ = a.core.getLyric(item.Mid)
 		}
 		a.download(filePath, item, downloadLrc, downloadCover)
-		a.log(fmt.Sprintf("[%s]添加成功", item.Name))
+		a.log(fmt.Sprintf("[%s]%s", item.Name, a.tr("AddToDownloadCenterSuccess")))
 	}
 
 	return a.genOk(nil)
@@ -200,7 +220,7 @@ func (a *AppQQ) OnSelectSavePath() model.BaseResponse {
 	setting, err := a.getSetting()
 	if err != nil {
 		a.log("getsetting err: " + err.Error())
-		return a.genError("设置失败")
+		return a.genError(a.tr("SettingFail"))
 	}
 	if setting != nil {
 		existPath = setting.SavePath
@@ -209,7 +229,7 @@ func (a *AppQQ) OnSelectSavePath() model.BaseResponse {
 	path, err := runtime.OpenDirectoryDialog(a.ctx, runtime.OpenDialogOptions{
 		DefaultDirectory:           existPath,
 		DefaultFilename:            "",
-		Title:                      "选择保存路径",
+		Title:                      a.tr("ChooseFileSavePathFail"),
 		Filters:                    nil,
 		ShowHiddenFiles:            false,
 		CanCreateDirectories:       false,
@@ -218,11 +238,11 @@ func (a *AppQQ) OnSelectSavePath() model.BaseResponse {
 	})
 	if err != nil {
 		a.log("getsetting err: " + err.Error())
-		return a.genError("设置失败")
+		return a.genError(a.tr("SettingFail"))
 	}
 
 	if len(path) <= 0 {
-		return a.genError("未选择路径")
+		return a.genError(a.tr("NoSavePathChoose"))
 	}
 
 	return a.genOk(path)
@@ -315,7 +335,7 @@ func (a *AppQQ) OnGetSetting() model.BaseResponse {
 	setting, err := a.getSetting()
 	if err != nil {
 		a.log("读取配置文件错误: " + err.Error())
-		return a.genError("读取配置文件错误")
+		return a.genError(a.tr("ConfigFileParseFail"))
 	}
 
 	return a.genOk(setting)
@@ -326,16 +346,27 @@ func (a *AppQQ) OnSetSetting(settingStr string) model.BaseResponse {
 	err := json.Unmarshal([]byte(settingStr), &setting)
 	if err != nil {
 		a.log("保存配置失败: " + err.Error())
-		return a.genError("保存配置失败")
+		return a.genError(a.tr("SettingFail"))
 	}
 
 	err = a.setSetting(setting)
 	if err != nil {
 		a.log("保存配置失败: " + err.Error())
-		return a.genError("保存配置失败")
+		return a.genError(a.tr("SettingFail"))
 	}
 
+	if a.i18n.GetDefaultLanguage() != setting.Language {
+		a.i18n.SetDefaultLanguage(setting.Language)
+		runtime.WindowReloadApp(a.ctx)
+	}
 	return a.genOk(setting)
+}
+
+func (a *AppQQ) GetI18nSource(key string) model.I18nSourceMap {
+	return model.I18nSourceMap{
+		CurrentLang: a.i18n.GetLangName(),
+		Sources:     a.i18n.GetI18nSource(),
+	}
 }
 
 func (a *AppQQ) onDownloadResult(res model.BaseResponse) {
@@ -376,6 +407,10 @@ func (a *AppQQ) download(path string, item model.DownloadItem, downloadLrc, down
 		DownloadLrc:   downloadLrc,
 		DownloadCover: downloadCover,
 	})
+}
+
+func (a *AppQQ) tr(key string) string {
+	return a.i18n.Parse("server." + key)
 }
 
 func (a *AppQQ) genOk(data interface{}) model.BaseResponse {

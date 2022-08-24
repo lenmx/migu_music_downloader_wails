@@ -399,3 +399,8 @@ type LyricRes struct {
 	Retcode int    `json:"retcode"`
 	Lyric   string `json:"lyric"`
 }
+
+type I18nSourceMap struct {
+	CurrentLang string                 `json:"currentLang"`
+	Sources     map[string]interface{} `json:"sources"`
+}

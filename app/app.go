@@ -64,7 +64,7 @@ func (a *App) OnSearch(keyword string, pageIndex, pageSize int) model.BaseRespon
 }
 
 func (a *App) OnDownload(sourceType string, downloadItemsJson string) model.BaseResponse {
-	a.log("receive item: "+ downloadItemsJson)
+	a.log("receive item: " + downloadItemsJson)
 	var items []model.DownloadItem
 	err := json.Unmarshal([]byte(downloadItemsJson), &items)
 	if err != nil {
@@ -110,7 +110,7 @@ func (a *App) OnSelectSavePath() model.BaseResponse {
 	existPath := ""
 	setting, err := a.getSetting()
 	if err != nil {
-		a.log("getsetting err: "+err.Error())
+		a.log("getsetting err: " + err.Error())
 		return a.genError("设置失败")
 	}
 	if setting != nil {
@@ -128,7 +128,7 @@ func (a *App) OnSelectSavePath() model.BaseResponse {
 		TreatPackagesAsDirectories: false,
 	})
 	if err != nil {
-		a.log("getsetting err: "+err.Error())
+		a.log("getsetting err: " + err.Error())
 		return a.genError("设置失败")
 	}
 

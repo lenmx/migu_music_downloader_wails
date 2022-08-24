@@ -19,8 +19,13 @@ func main() {
 		configPath = ""
 	}
 
-	application := app.NewAppQQ(searchUrl, downloadUrl, configPath)
-	err := wails.Run(&options.App{
+	application, err := app.NewAppQQ(searchUrl, downloadUrl, configPath)
+	if err != nil {
+		println("Error:", err)
+		return
+	}
+
+	err = wails.Run(&options.App{
 		Title:            "migu music downloader wails",
 		Width:            1000,
 		Height:           800,

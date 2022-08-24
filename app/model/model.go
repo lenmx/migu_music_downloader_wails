@@ -80,6 +80,7 @@ type PageRes struct {
 }
 
 type Setting struct {
+	Language      string `json:"language",yaml:"language"`
 	SavePath      string `json:"savePath",yaml:"savePath"`
 	DownloadLrc   bool   `json:"downloadLrc",yaml:"downloadLrc"`
 	DownloadCover bool   `json:"downloadCover",yaml:"downloadCover"`
