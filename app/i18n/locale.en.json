@@ -38,7 +38,8 @@
     "SettingFail": "setting failed",
     "NoSavePathChoose": "no save path choose",
     "ConfigFileParseFail": "config file parse failed",
-    "LrcParseFail": "lyric parse failed"
+    "LrcParseFail": "lyric parse failed",
+    "NoSQFile": "No SQ file"
   }
 }
 

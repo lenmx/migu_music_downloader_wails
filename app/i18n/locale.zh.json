@@ -24,6 +24,7 @@
     "TableColSingers": "歌手",
     "TableColAlbums": "专辑",
     "TableColOptions": "操作"
+
   },
 
   "server": {
@@ -38,7 +39,8 @@
     "SettingFail": "设置失败",
     "NoSavePathChoose": "未选择保存路径",
     "ConfigFileParseFail": "读取配置文件错误",
-    "LrcParseFail": "歌词解析失败"
+    "LrcParseFail": "歌词解析失败",
+    "NoSQFile": "高音质文件未找到"
   }
 }
 

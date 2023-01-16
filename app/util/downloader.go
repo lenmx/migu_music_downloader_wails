@@ -5,7 +5,6 @@ import (
 	"github.com/go-resty/resty/v2"
 	"migu_music_downloader_wails/app/consts"
 	"migu_music_downloader_wails/app/model"
-	"os"
 	"strings"
 	"time"
 )
@@ -69,28 +68,28 @@ func (d *Downloader) Stop() {
 func (d *Downloader) download(data model.DownloadQueueItem) {
 	resp := model.BaseResponse{Code: 0, Message: "下载成功", Data: data}
 
-	_, err := resty.New().R().SetOutput(data.Path).Get(data.Url)
+	_, err := resty.New().R().SetOutput(data.Filename).Get(data.Url)
 	if err != nil {
 		resp.Code = -1
 		resp.Message = "下载失败：" + err.Error()
 	}
 
-	idx := strings.LastIndex(data.Path, ".")
-	if data.DownloadLrc && len(data.LrcUrl) > 0 {
-		path := data.Path[:idx] + ".lrc"
+	idx := strings.LastIndex(data.Filename, ".")
+	if len(data.LrcUrl) > 0 {
+		path := data.Filename[:idx] + ".lrc"
 		resty.New().R().SetOutput(path).Get(data.LrcUrl)
 	}
-	if data.DownloadLrc && len(data.LrcContent) > 0 {
-		path := data.Path[:idx] + ".lrc"
-		file, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, os.ModePerm)
-		if err == nil {
-			defer file.Close()
-			file.WriteString(data.LrcContent)
-		}
+	if len(data.LrcUrl) > 0 {
+		//path := data.Filename[:idx] + ".lrc"
+		//file, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, os.ModePerm)
+		//if err == nil {
+		//	defer file.Close()
+		//	file.WriteString(data.LrcContent)
+		//}
 	}
-	if data.DownloadCover && len(data.Cover) > 0 {
-		path := data.Path[:idx] + ".png"
-		resty.New().R().SetOutput(path).Get(data.Cover)
+	if len(data.PicUrl) > 0 {
+		path := data.Filename[:idx] + ".png"
+		resty.New().R().SetOutput(path).Get(data.PicUrl)
 	}
 
 	if d.onResult != nil {

@@ -2,116 +2,70 @@ package app
 
 import (
 	"context"
+	"embed"
 	"encoding/json"
 	"fmt"
-	"github.com/go-resty/resty/v2"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"migu_music_downloader_wails/app/consts"
+	"migu_music_downloader_wails/app/i18n"
 	"migu_music_downloader_wails/app/model"
 	"migu_music_downloader_wails/app/util"
 	"os"
-	"strconv"
 )
 
 type App struct {
 	ctx    context.Context
 	cancel context.CancelFunc
+	i18n   *i18n.I18n
 
-	searchUrl   string
-	downloadUrl string
-	configPath  string
-
-	downloader *util.Downloader
+	configPath string
 }
 
-func NewApp(searchUrl, downloadUrl, configPath string) *App {
-	app := &App{
-		searchUrl:   searchUrl,
-		downloadUrl: downloadUrl,
-		configPath:  configPath,
+var GApp *App
+
+//go:embed i18n/locale.*.json
+var LocaleFS embed.FS
+
+func NewApp(configPath string) (*App, error) {
+	if GApp != nil {
+		return GApp, nil
 	}
 
-	d := util.NewDownloader(app.OnDownloadResult, 10)
-	app.downloader = d
-	go app.downloader.Run()
+	GApp = &App{
+		i18n:       i18n.New("en"),
+		configPath: configPath,
+	}
+	_, err := GApp.i18n.LoadFile(LocaleFS, "i18n/locale.zh.json", "zh")
+	if err != nil {
+		fmt.Println("初始化失败", err)
+		return nil, err
+	}
 
-	return app
+	_, err = GApp.i18n.LoadFile(LocaleFS, "i18n/locale.en.json", "en")
+	if err != nil {
+		fmt.Println("初始化失败", err)
+		return nil, err
+	}
+
+	return GApp, nil
 }
 
 func (a *App) Startup(ctx context.Context) {
 	a.ctx, a.cancel = context.WithCancel(ctx)
 }
 
-func (a *App) OnSearch(keyword string, pageIndex, pageSize int) model.BaseResponse {
-	res, err := a.search(keyword, pageIndex, pageSize)
-	if err != nil {
-		return a.genError(err.Error())
-	}
-
-	if res.Code != consts.SearchSuccess {
-		return a.genError(res.Info)
-	}
-
-	total, _ := strconv.Atoi(res.SongResultData.TotalCount)
-	resp := &model.PageRes{
-		Total: total,
-		Items: res.SongResultData.Result,
-	}
-
-	return a.genOk(resp)
-}
-
-func (a *App) OnDownload(sourceType string, downloadItemsJson string) model.BaseResponse {
-	a.log("receive item: " + downloadItemsJson)
-	var items []model.DownloadItem
-	err := json.Unmarshal([]byte(downloadItemsJson), &items)
-	if err != nil {
-		return a.genError(err.Error())
-	}
-
-	path := ""
-	downloadLrc := false
-	downloadCover := false
-	setting, _ := a.getSetting()
-	if setting != nil && len(setting.SavePath) > 0 {
-		path = setting.SavePath
-		downloadLrc = setting.DownloadLrc
-		downloadCover = setting.DownloadCover
-	} else {
-		path, err = runtime.OpenDirectoryDialog(a.ctx, runtime.OpenDialogOptions{
-			DefaultDirectory:           "",
-			DefaultFilename:            "",
-			Title:                      "选择保存路径",
-			Filters:                    nil,
-			ShowHiddenFiles:            false,
-			CanCreateDirectories:       false,
-			ResolvesAliases:            false,
-			TreatPackagesAsDirectories: false,
-		})
-		if err != nil {
-			return a.genError("选择文件夹失败")
-		}
-		if len(path) <= 0 {
-			return a.genError("取消下载")
-		}
-	}
-
-	for _, item := range items {
-		a.download(sourceType, path, item, downloadLrc, downloadCover)
-		a.log(fmt.Sprintf("[%s]添加成功 %s", item.Name, item.Url))
-	}
-
-	return a.genOk(nil)
+func (a *App) Stop(ctx context.Context) {
+	a.cancel()
 }
 
 func (a *App) OnSelectSavePath() model.BaseResponse {
 	existPath := ""
-	setting, err := a.getSetting()
+	setting, err := a.GetSetting()
 	if err != nil {
-		a.log("getsetting err: " + err.Error())
-		return a.genError("设置失败")
+		a.Log("getsetting err: " + err.Error())
+		return a.GenError(a.TR("SettingFail"))
 	}
 	if setting != nil {
 		existPath = setting.SavePath
@@ -120,7 +74,7 @@ func (a *App) OnSelectSavePath() model.BaseResponse {
 	path, err := runtime.OpenDirectoryDialog(a.ctx, runtime.OpenDialogOptions{
 		DefaultDirectory:           existPath,
 		DefaultFilename:            "",
-		Title:                      "选择保存路径",
+		Title:                      a.TR("ChooseFileSavePathFail"),
 		Filters:                    nil,
 		ShowHiddenFiles:            false,
 		CanCreateDirectories:       false,
@@ -128,18 +82,18 @@ func (a *App) OnSelectSavePath() model.BaseResponse {
 		TreatPackagesAsDirectories: false,
 	})
 	if err != nil {
-		a.log("getsetting err: " + err.Error())
-		return a.genError("设置失败")
+		a.Log("getsetting err: " + err.Error())
+		return a.GenError(a.TR("SettingFail"))
 	}
 
 	if len(path) <= 0 {
-		return a.genError("未选择路径")
+		return a.GenError(a.TR("NoSavePathChoose"))
 	}
 
-	return a.genOk(path)
+	return a.GenOk(path)
 }
 
-func (a *App) getSetting() (*model.Setting, error) {
+func (a *App) GetSetting() (*model.Setting, error) {
 	if _, err := os.Stat(a.configPath); os.IsNotExist(err) {
 		os.MkdirAll(a.configPath, os.ModePerm)
 	}
@@ -185,7 +139,7 @@ func (a *App) getSetting() (*model.Setting, error) {
 	return &setting, nil
 }
 
-func (a *App) setSetting(setting model.Setting) error {
+func (a *App) SetSetting(setting model.Setting) error {
 	if _, err := os.Stat(a.configPath); os.IsNotExist(err) {
 		os.MkdirAll(a.configPath, os.ModePerm)
 	}
@@ -223,78 +177,48 @@ func (a *App) setSetting(setting model.Setting) error {
 }
 
 func (a *App) OnGetSetting() model.BaseResponse {
-	setting, err := a.getSetting()
+	setting, err := a.GetSetting()
 	if err != nil {
-		a.log("读取配置文件错误: " + err.Error())
-		return a.genError("读取配置文件错误")
+		a.Log("读取配置文件错误: " + err.Error())
+		return a.GenError(a.TR("ConfigFileParseFail"))
 	}
 
-	return a.genOk(setting)
+	return a.GenOk(setting)
 }
 
 func (a *App) OnSetSetting(settingStr string) model.BaseResponse {
 	var setting model.Setting
 	err := json.Unmarshal([]byte(settingStr), &setting)
 	if err != nil {
-		a.log("保存配置失败: " + err.Error())
-		return a.genError("保存配置失败")
+		a.Log("保存配置失败: " + err.Error())
+		return a.GenError(a.TR("SettingFail"))
 	}
 
-	err = a.setSetting(setting)
+	err = a.SetSetting(setting)
 	if err != nil {
-		a.log("保存配置失败: " + err.Error())
-		return a.genError("保存配置失败")
+		a.Log("保存配置失败: " + err.Error())
+		return a.GenError(a.TR("SettingFail"))
 	}
 
-	return a.genOk(setting)
+	if a.i18n.GetDefaultLanguage() != setting.Language {
+		a.i18n.SetDefaultLanguage(setting.Language)
+		runtime.WindowReloadApp(a.ctx)
+	}
+	return a.GenOk(setting)
 }
 
-func (a *App) OnDownloadResult(res model.BaseResponse) {
-	item := res.Data.(model.DownloadQueueItem)
-	a.log(fmt.Sprintf("[%s]%s", item.Name, res.Message))
-	a.pushDownloadResult(res)
+func (a *App) GetI18nSource(key string) model.I18nSourceMap {
+	return model.I18nSourceMap{
+		CurrentLang: a.i18n.GetLangName(),
+		Sources:     a.i18n.GetI18nSource(),
+	}
 }
 
-func (a *App) search(keyword string, pageIndex, pageSize int) (*model.SearchRes, error) {
-	// http://pd.musicapp.migu.cn/MIGUM2.0/v1.0/content/search_all.do?ua=Android_migu&version=5.0.1&pageNo=1&pageSize=10&text=周杰伦&searchSwitch=
-	url := fmt.Sprintf(a.searchUrl, pageIndex, pageSize, keyword)
-
-	res, err := resty.New().R().Get(url)
-	if err != nil {
-		return nil, err
-	}
-
-	var resp model.SearchRes
-	err = json.Unmarshal(res.Body(), &resp)
-	if err != nil {
-		return nil, err
-	}
-
-	return &resp, nil
+func (a *App) TR(key string) string {
+	return a.i18n.Parse("server." + key)
 }
 
-func (a *App) download(sourceType, path string, item model.DownloadItem, downloadLrc, downloadCover bool) {
-	_sourceType := consts.SourceType_HQ
-	if sourceType == "SQ" {
-		_sourceType = consts.SourceType_SQ
-	}
-
-	if path[len(path)-1] != '/' {
-		path += "/"
-	}
-
-	path += item.Name + consts.SourceType2FileExt[_sourceType]
-	//url := fmt.Sprintf(a.downloadUrl, string(_sourceType), item.ContentId)
-
-	a.downloader.Push(a.ctx, model.DownloadQueueItem{
-		DownloadItem:  item,
-		Path:          path,
-		DownloadLrc:   downloadLrc,
-		DownloadCover: downloadCover,
-	})
-}
-
-func (a *App) genOk(data interface{}) model.BaseResponse {
+func (a *App) GenOk(data interface{}) model.BaseResponse {
 	return model.BaseResponse{
 		Code:    0,
 		Message: "",
@@ -302,7 +226,7 @@ func (a *App) genOk(data interface{}) model.BaseResponse {
 	}
 }
 
-func (a *App) genError(message string) model.BaseResponse {
+func (a *App) GenError(message string) model.BaseResponse {
 	return model.BaseResponse{
 		Code:    -1,
 		Message: message,
@@ -310,15 +234,6 @@ func (a *App) genError(message string) model.BaseResponse {
 	}
 }
 
-func (a *App) log(message string) {
+func (a *App) Log(message string) {
 	util.Log(a.ctx, message)
-}
-
-func (a *App) pushDownloadResult(response model.BaseResponse) {
-	util.PushDownloadResult(a.ctx, response)
-}
-
-func (a *App) Stop(ctx context.Context) {
-	a.cancel()
-	a.downloader.Stop()
 }

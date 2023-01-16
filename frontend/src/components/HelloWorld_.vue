@@ -17,7 +17,7 @@
       <a-table
         :row-selection="{ selectedRowKeys: selectedRowKeys, onChange: onSelectChange }"
         :columns="columns"
-        :rowKey="'musicId'"
+        :rowKey="'contentId'"
         :data-source="searchRes"
         :pagination="pagination"
         :loading="loading"
@@ -67,7 +67,7 @@
       width="320"
       @close="onToggleDownloadPanel(false)"
     >
-      <p v-for="(item, i) in downloadResults" :key="item.data.musicId">
+      <p v-for="(item, i) in downloadResults" :key="item.data.contentId">
         <span v-if="item.code==0">
           {{ item.data.name }} <a-icon type="check" filled style="font-size: 16px;color: #52c41a"/>
         </span>
@@ -86,8 +86,7 @@
 </template>
 
 <script>
-import { OnGetSetting, OnSelectSavePath, OnSetSetting, GetI18nSource} from '../../wailsjs/go/app/App.js'
-import { OnDownload, OnSearch } from "../../wailsjs/go/kuwo/AppKuwo"
+import {OnDownload, OnGetSetting, OnSearch, OnSelectSavePath, OnSetSetting, GetI18nSource} from '../../wailsjs/go/app/AppQQ.js'
 import {EventsOn} from '../../wailsjs/runtime/runtime.js'
 
 export default {
@@ -195,18 +194,36 @@ export default {
           // let sqUrl = a.rateFormats ? a.rateFormats.find(a => a.formatType == 'SQ') : null
 
           return {
-            musicId: a.musicId,
+            contentId: a.contentId,
             name: a.name,
             singers: !a.singers ? '' : a.singers.toString(),
             albums: !a.albums ? '' : a.albums.toString(),
+            hqUrl: a.hqUrl && a.hqUrl.url ? a.hqUrl.url.replace('ftp://218.200.160.122:21', 'http://freetyst.nf.migu.cn') : '',
+            sqUrl: a.sqUrl && a.sqUrl.androidUrl ? a.sqUrl.androidUrl.replace('ftp://218.200.160.122:21', 'http://freetyst.nf.migu.cn') : '',
+            lrcUrl: a.lyricUrl,
+            cover: !a.imgItems || a.imgItems.length <= 0 ? '' : a.imgItems[0].img,
+            mid: a.mid,
+            file: a.file,
+            fileInfos: a.fileInfos,
           }
         });
       })
     },
     onDownload(sourceType, record) {
+      let url = record.sqUrl
+      if (sourceType == 'HQ') {
+        url = record.hqUrl
+      }
+
       let items = [{
-        musicId: record.musicId,
-        musicName: record.name,
+        contentId: record.contentId,
+        name: record.name,
+        url: url,
+        lrcUrl: record.lrcUrl,
+        cover: record.cover,
+        mid: record.mid,
+        file: record.file,
+        fileInfos: record.fileInfos,
       }]
 
       console.log('items: ', items, record)
@@ -217,10 +234,21 @@ export default {
       })
     },
     onBatchDownload(sourceType) {
-      let items = this.searchRes.filter(a => this.selectedRowKeys.indexOf(a.musicId) != -1).map(record => {
+      let items = this.searchRes.filter(a => this.selectedRowKeys.indexOf(a.contentId) != -1).map(record => {
+        let url = record.sqUrl
+        if (sourceType == 'HQ') {
+          url = record.hqUrl
+        }
+
         return {
-          musicId: record.musicId,
-          musicName: record.name,
+          contentId: record.contentId,
+          name: record.name,
+          url: url,
+          lrcUrl: record.lrcUrl,
+          cover: record.cover,
+          mid: record.mid,
+          file: record.file,
+          fileInfos: record.fileInfos,
         }
       })
 

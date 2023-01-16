@@ -86,25 +86,13 @@ type Setting struct {
 	DownloadCover bool   `json:"downloadCover",yaml:"downloadCover"`
 }
 
-type DownloadItem struct {
-	ContentId int    `json:"contentId"`
-	Name      string `json:"name"`
-	Url       string `json:"url"`
-	LrcUrl    string `json:"lrcUrl"`
-	Cover     string `json:"cover"`
-
-	Mid        string              `json:"mid"`
-	File       SearchFile          `json:"file"`
-	FileInfos  map[string]FileInfo `json:"fileInfos"`
-	LrcContent string              `json:"lrcContent"`
-}
-
 type DownloadQueueItem struct {
-	DownloadItem
-	Path string `json:"path"`
-
-	DownloadLrc   bool
-	DownloadCover bool
+	MusicId  string `json:"musicId"`
+	Name     string `json:"name"`
+	Filename string `json:"filename"`
+	Url      string `json:"url"`
+	LrcUrl   string `json:"lrcUrl"`
+	PicUrl   string `json:"cover"`
 }
 
 type BaseResponse struct {
