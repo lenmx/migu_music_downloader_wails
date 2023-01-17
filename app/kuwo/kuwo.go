@@ -120,11 +120,14 @@ func (a *AppKuwo) OnDownload(sourceType string, downloadItemJson string) model.B
 			continue
 		}
 
+		filename := path.Join(savePath, item.MusicName+path.Ext(downloadUrl))
+		filename = util.FixWindowsFileName2Normal(filename)
 		queueItem := model.DownloadQueueItem{
-			MusicId:  item.MusicId,
-			Name:     item.MusicName,
-			Filename: path.Join(savePath, item.MusicName+path.Ext(downloadUrl)),
-			Url:      downloadUrl,
+			MusicId:    item.MusicId,
+			Name:       item.MusicName,
+			Filename:   filename,
+			Url:        downloadUrl,
+			Mp3Process: a.core.ProcessMp3,
 		}
 		if downloadLrc {
 			queueItem.LrcUrl = a.core.GetLrcUrl(item.MusicId)

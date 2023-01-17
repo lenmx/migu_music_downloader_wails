@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/go-resty/resty/v2"
 	"migu_music_downloader_wails/app/model"
+	"migu_music_downloader_wails/app/util"
 	"os"
 	"path"
 	"strings"
@@ -251,4 +252,13 @@ func TestConvertLrc(t *testing.T) {
 	}
 
 	fmt.Println(sb.String())
+}
+
+func TestPic(t *testing.T) {
+	url := "http://artistpicserver.kuwo.cn/pic.web?corp=kuwo&type=rid_pic&pictype=url&content=list&size=640&rid=156522"
+	mp3Filename := "C:\\Users\\xlano\\projects\\side_project\\migu_music_downloader_wails\\frontend\\Justin Bieber - What do you mean ? (Remix).mp3"
+	mp3Filename = util.FixWindowsFileName2Normal(mp3Filename)
+
+	core := &AppKuwoCore{}
+	core.ProcessPic(url, mp3Filename)
 }

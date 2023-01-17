@@ -27,7 +27,24 @@ const (
 )
 
 const (
-	SearchSuccess = "000000"
-	LoopInterval  = time.Second * 1
+	SearchSuccess   = "000000"
+	LoopInterval    = time.Second * 1
 	DefaultPermOpen = os.FileMode(0666)
 )
+
+var (
+	WindowsSpecialCharMap = map[string]string{
+		`|`: `,`,
+		`/`: ` - `,
+		`╲`: ` - `,
+		`、`: `·`,
+		`“`: `"`,
+		`”`: `"`,
+		`*`: `x`,
+		`?`: `？`,
+		`<`: `《`,
+		`>`: `》`,
+		` `: ``,
+	}
+)
+

@@ -2,7 +2,6 @@ package util
 
 import (
 	"context"
-	"github.com/go-resty/resty/v2"
 	"migu_music_downloader_wails/app/consts"
 	"migu_music_downloader_wails/app/model"
 	"time"
@@ -67,10 +66,16 @@ func (d *Downloader) Stop() {
 func (d *Downloader) download(data model.DownloadQueueItem) {
 	resp := model.BaseResponse{Code: 0, Message: "下载成功", Data: data}
 
-	_, err := resty.New().R().SetOutput(data.Filename).Get(data.Url)
-	if err != nil {
-		resp.Code = -1
-		resp.Message = "下载失败：" + err.Error()
+	if len(data.Url) > 0 && data.Mp3Process != nil {
+		err := data.Mp3Process(data.Url, data.Filename)
+		if err != nil {
+			resp.Code = -1
+			resp.Message = "下载失败: " + err.Error()
+			if d.onResult != nil {
+				d.onResult(resp)
+			}
+			return
+		}
 	}
 
 	if len(data.LrcUrl) > 0 && data.LrcProcess != nil {

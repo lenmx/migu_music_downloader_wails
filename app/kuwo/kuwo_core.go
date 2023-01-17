@@ -2,10 +2,12 @@ package kuwo
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/go-resty/resty/v2"
 	"migu_music_downloader_wails/app/model"
 	"migu_music_downloader_wails/app/util"
+	url2 "net/url"
 	"os"
 	"path"
 	"strconv"
@@ -25,6 +27,7 @@ func NewAppKuwoCore() *AppKuwoCore {
 }
 
 func (a *AppKuwoCore) Search(keyword string, pageIndex, pageSize int) (*model.KuwoSearchRes, error) {
+	keyword = url2.QueryEscape(keyword)
 	url := fmt.Sprintf("http://search.kuwo.cn/r.s?client=kt&all=%s&pn=%d&rn=%d&uid=221260053&ver=kwplayer_ar_99.99.99.99&vipver=1&ft=music&cluster=0&strategy=2012&encoding=utf8&rformat=json&vermerge=1&mobi=1", keyword, pageIndex, pageSize)
 	res, err := resty.New().R().Get(url)
 	if err != nil {
@@ -89,6 +92,26 @@ func (a *AppKuwoCore) GetLrcUrl(musicId string) string {
 func (a *AppKuwoCore) GetPicUrl(musicId string) string {
 	url := fmt.Sprintf("http://artistpicserver.kuwo.cn/pic.web?corp=kuwo&type=rid_pic&pictype=url&content=list&size=640&rid=%s", musicId)
 	return url
+}
+
+func (a *AppKuwoCore) ProcessMp3(url, mp3Filename string) error {
+	mp3Res, err := resty.New().R().Get(url)
+	if err != nil {
+		return err
+	}
+
+	// MP3文件不存在
+	if len(mp3Res.Body()) < 1000 {
+		return errors.New("file not exist")
+	}
+
+	file, err := os.OpenFile(mp3Filename, os.O_CREATE|os.O_RDWR, os.ModePerm)
+	if err == nil {
+		defer file.Close()
+		file.Write(mp3Res.Body())
+	}
+
+	return nil
 }
 
 func (a *AppKuwoCore) ProcessLrc(url, mp3Filename string) {

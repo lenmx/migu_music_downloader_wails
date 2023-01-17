@@ -13,3 +13,5 @@ type SearchItemRes struct {
 type LrcProcessFn func(url, filename string)
 
 type PicProcessFn func(url, filename string)
+
+type Mp3ProcessFn func(url, filename string) error

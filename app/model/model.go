@@ -96,6 +96,7 @@ type DownloadQueueItem struct {
 
 	LrcProcess LrcProcessFn `json:"-"`
 	PicProcess PicProcessFn `json:"-"`
+	Mp3Process Mp3ProcessFn `json:"-"`
 }
 
 type BaseResponse struct {

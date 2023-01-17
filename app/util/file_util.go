@@ -1,6 +1,7 @@
 package util
 
 import (
+	"migu_music_downloader_wails/app/consts"
 	"os"
 	"path"
 	"strings"
@@ -48,4 +49,12 @@ func GetFilename(fullFilename string) string {
 	idx := strings.LastIndex(filename, ".")
 
 	return filename[:idx]
+}
+
+func FixWindowsFileName2Normal(texts string) string {
+	for k, v := range consts.WindowsSpecialCharMap {
+		texts = strings.ReplaceAll(texts, k, v)
+	}
+
+	return texts
 }
