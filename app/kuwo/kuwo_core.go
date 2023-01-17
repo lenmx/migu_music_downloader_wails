@@ -5,6 +5,10 @@ import (
 	"fmt"
 	"github.com/go-resty/resty/v2"
 	"migu_music_downloader_wails/app/model"
+	"migu_music_downloader_wails/app/util"
+	"os"
+	"path"
+	"strconv"
 	"strings"
 )
 
@@ -85,4 +89,61 @@ func (a *AppKuwoCore) GetLrcUrl(musicId string) string {
 func (a *AppKuwoCore) GetPicUrl(musicId string) string {
 	url := fmt.Sprintf("http://artistpicserver.kuwo.cn/pic.web?corp=kuwo&type=rid_pic&pictype=url&content=list&size=640&rid=%s", musicId)
 	return url
+}
+
+func (a *AppKuwoCore) ProcessLrc(url, mp3Filename string) {
+	res, err := resty.New().R().Get(url)
+	if err != nil {
+		return
+	}
+
+	var data model.KuwoLrcRes
+	json.Unmarshal(res.Body(), &data)
+
+	var sb strings.Builder
+	for _, item := range data.Data.Lrclist {
+		time := fmt.Sprintf("[%s]", convertTime(item.Time))
+		sb.WriteString(time)
+		sb.WriteString(item.LineLyric + "\n")
+	}
+
+	filename := path.Join(path.Dir(mp3Filename), util.GetFilename(mp3Filename)+".lrc")
+	file, err := os.OpenFile(filename, os.O_CREATE|os.O_RDWR, os.ModePerm)
+	if err == nil {
+		defer file.Close()
+		file.WriteString(sb.String())
+	}
+}
+
+func (a *AppKuwoCore) ProcessPic(url, mp3Filename string) {
+	r := resty.New().R()
+	picUrlRes, err := r.Get(url)
+	picUrl := strings.Trim(picUrlRes.String(), " ")
+
+	if err == nil && strings.HasPrefix(picUrl, "http") {
+		picRes, err := r.Get(picUrl)
+		if err == nil {
+			filename := path.Join(path.Dir(mp3Filename), util.GetFilename(mp3Filename)+path.Ext(picUrl))
+			file, err := os.OpenFile(filename, os.O_CREATE|os.O_RDWR, os.ModePerm)
+			if err == nil {
+				defer file.Close()
+				file.Write(picRes.Body())
+			}
+		}
+	}
+}
+
+func convertTime(str string) string {
+	timeArr := strings.Split(str, ".")
+	ms := time2MS(timeArr[0])
+
+	return fmt.Sprintf("%s.%s", ms, timeArr[1])
+}
+
+func time2MS(str string) string {
+	t, _ := strconv.Atoi(str)
+	minute := t / 60
+	second := t % 60
+
+	return fmt.Sprintf("%02d:%02d", minute, second)
 }

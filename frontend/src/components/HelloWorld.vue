@@ -88,7 +88,7 @@
 <script>
 import { OnGetSetting, OnSelectSavePath, OnSetSetting, GetI18nSource} from '../../wailsjs/go/app/App.js'
 import { OnDownload, OnSearch } from "../../wailsjs/go/kuwo/AppKuwo"
-import {EventsOn} from '../../wailsjs/runtime/runtime.js'
+import {EventsOn, WindowReloadApp } from '../../wailsjs/runtime/runtime.js'
 
 export default {
   name: 'HelloWorld',
@@ -159,13 +159,17 @@ export default {
       this.settingForm.language = res.currentLang
       this.currentLang = res.currentLang
       this.i18nSource = sourceMap
-
       this.initColumns()
     })
     EventsOn("download_result", this.onDownloadResult)
     EventsOn("log", log => console.log('serverLog: ', log))
     this.onGetSetting()
   },
+  // watch: {
+  //   currentLan(newVal, oldVal) {
+  //     this.initColumns()
+  //   }
+  // },
   methods: {
     initColumns() {
       this.columns[0].title = this.tr('TableColName')
@@ -181,7 +185,6 @@ export default {
     onSearch() {
       this.loading = true
       OnSearch(this.searchForm.keyword, this.searchForm.pageIndex, this.searchForm.pageSize).then(res => {
-        console.log("on search: ", res)
         this.loading = false
         if (res.code < 0) {
           this.$message.error(this.tr('SearchFail') + ": " + res.message);
@@ -191,9 +194,6 @@ export default {
         this.pagination.current = this.searchForm.pageIndex;
         this.pagination.total = res.data.total;
         this.searchRes = res.data.items.map(a => {
-          // let hqUrl = a.rateFormats ? a.rateFormats.find(a => a.formatType == 'HQ') : null
-          // let sqUrl = a.rateFormats ? a.rateFormats.find(a => a.formatType == 'SQ') : null
-
           return {
             musicId: a.musicId,
             name: a.name,
@@ -208,8 +208,6 @@ export default {
         musicId: record.musicId,
         musicName: record.name,
       }]
-
-      console.log('items: ', items, record)
 
       OnDownload(sourceType, JSON.stringify(items)).then(res => {
         if (res.code < 0) this.$message.error( this.tr('AddToDownloadCenterFail') + ': ' + res.message);
@@ -281,11 +279,13 @@ export default {
         if (res.code < 0)
           return
 
-        if (res.data.language) this.settingForm.language = res.data.language
+        this.currentLang = res.data.language
+        this.settingForm.language = res.data.language
         this.settingForm.savePath = res.data.savePath
         this.settingForm.downloadLrc = res.data.downloadLrc
         this.settingForm.downloadCover = res.data.downloadCover
-        console.log('form: ', this.settingForm)
+
+        this.initColumns()
       })
     },
     tr(key) {

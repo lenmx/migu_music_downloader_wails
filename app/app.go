@@ -7,12 +7,12 @@ import (
 	"fmt"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"gopkg.in/yaml.v2"
-	"io/ioutil"
 	"migu_music_downloader_wails/app/consts"
 	"migu_music_downloader_wails/app/i18n"
 	"migu_music_downloader_wails/app/model"
 	"migu_music_downloader_wails/app/util"
 	"os"
+	"path"
 )
 
 type App struct {
@@ -20,7 +20,7 @@ type App struct {
 	cancel context.CancelFunc
 	i18n   *i18n.I18n
 
-	configPath string
+	configFilename string
 }
 
 var GApp *App
@@ -34,9 +34,12 @@ func NewApp(configPath string) (*App, error) {
 	}
 
 	GApp = &App{
-		i18n:       i18n.New("en"),
-		configPath: configPath,
+		i18n:           i18n.New(),
+		configFilename: path.Join(configPath, "config.yml"),
 	}
+
+	util.CreateFileIfN(GApp.configFilename)
+
 	_, err := GApp.i18n.LoadFile(LocaleFS, "i18n/locale.zh.json", "zh")
 	if err != nil {
 		fmt.Println("初始化失败", err)
@@ -64,7 +67,7 @@ func (a *App) OnSelectSavePath() model.BaseResponse {
 	existPath := ""
 	setting, err := a.GetSetting()
 	if err != nil {
-		a.Log("getsetting err: " + err.Error())
+		a.Log("getSetting err: " + err.Error())
 		return a.GenError(a.TR("SettingFail"))
 	}
 	if setting != nil {
@@ -82,7 +85,7 @@ func (a *App) OnSelectSavePath() model.BaseResponse {
 		TreatPackagesAsDirectories: false,
 	})
 	if err != nil {
-		a.Log("getsetting err: " + err.Error())
+		a.Log("getSetting err: " + err.Error())
 		return a.GenError(a.TR("SettingFail"))
 	}
 
@@ -94,38 +97,9 @@ func (a *App) OnSelectSavePath() model.BaseResponse {
 }
 
 func (a *App) GetSetting() (*model.Setting, error) {
-	if _, err := os.Stat(a.configPath); os.IsNotExist(err) {
-		os.MkdirAll(a.configPath, os.ModePerm)
-	}
-
-	filename := a.configPath + "/conf.yaml"
-	_, err := os.Stat(filename)
-	if err != nil {
-		if os.IsNotExist(err) {
-			file, err := os.Create(filename)
-			if err != nil {
-				return nil, err
-			}
-			defer file.Close()
-
-			setting := model.Setting{
-				SavePath:      "",
-				DownloadLrc:   false,
-				DownloadCover: false,
-			}
-			settingJson, _ := yaml.Marshal(setting)
-			_, err = file.Write(settingJson)
-			if err != nil {
-				return nil, err
-			}
-
-			return &setting, nil
-		} else {
-			return nil, err
-		}
-	}
-
-	content, err := ioutil.ReadFile(filename)
+	//_path, _ := filepath.Abs(a.configFilename)
+	//a.Log("config file path: " + _path)
+	content, err := os.ReadFile(a.configFilename)
 	if err != nil {
 		return nil, err
 	}
@@ -140,32 +114,11 @@ func (a *App) GetSetting() (*model.Setting, error) {
 }
 
 func (a *App) SetSetting(setting model.Setting) error {
-	if _, err := os.Stat(a.configPath); os.IsNotExist(err) {
-		os.MkdirAll(a.configPath, os.ModePerm)
-	}
-
-	var file *os.File
-	filename := a.configPath + "/conf.yaml"
-	_, err := os.Stat(filename)
+	file, err := os.OpenFile(a.configFilename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, consts.DefaultPermOpen)
 	if err != nil {
-		if os.IsNotExist(err) {
-			file, err = os.Create(filename)
-			if err != nil {
-				return err
-			}
-			defer file.Close()
-		} else {
-			return err
-		}
+		return err
 	}
-
-	if file == nil {
-		file, err = os.OpenFile(filename, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, consts.DefaultPermOpen)
-		if err != nil {
-			return err
-		}
-		defer file.Close()
-	}
+	defer file.Close()
 
 	settingJson, _ := yaml.Marshal(setting)
 	_, err = file.Write(settingJson)

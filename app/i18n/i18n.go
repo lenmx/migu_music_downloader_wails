@@ -11,11 +11,11 @@ type I18n struct {
 	langName  string
 }
 
-func New(defaultLangName string) *I18n {
+func New() *I18n {
 	i18n := &I18n{
 		sources:   map[string]interface{}{},
 		sourceMap: map[string]gjson.Result{},
-		langName:  defaultLangName,
+		langName:  "",
 	}
 
 	return i18n

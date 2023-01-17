@@ -93,6 +93,9 @@ type DownloadQueueItem struct {
 	Url      string `json:"url"`
 	LrcUrl   string `json:"lrcUrl"`
 	PicUrl   string `json:"cover"`
+
+	LrcProcess LrcProcessFn `json:"-"`
+	PicProcess PicProcessFn `json:"-"`
 }
 
 type BaseResponse struct {

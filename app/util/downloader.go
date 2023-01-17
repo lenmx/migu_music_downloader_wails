@@ -5,7 +5,6 @@ import (
 	"github.com/go-resty/resty/v2"
 	"migu_music_downloader_wails/app/consts"
 	"migu_music_downloader_wails/app/model"
-	"strings"
 	"time"
 )
 
@@ -74,22 +73,12 @@ func (d *Downloader) download(data model.DownloadQueueItem) {
 		resp.Message = "下载失败：" + err.Error()
 	}
 
-	idx := strings.LastIndex(data.Filename, ".")
-	if len(data.LrcUrl) > 0 {
-		path := data.Filename[:idx] + ".lrc"
-		resty.New().R().SetOutput(path).Get(data.LrcUrl)
+	if len(data.LrcUrl) > 0 && data.LrcProcess != nil {
+		data.LrcProcess(data.LrcUrl, data.Filename)
 	}
-	if len(data.LrcUrl) > 0 {
-		//path := data.Filename[:idx] + ".lrc"
-		//file, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR, os.ModePerm)
-		//if err == nil {
-		//	defer file.Close()
-		//	file.WriteString(data.LrcContent)
-		//}
-	}
-	if len(data.PicUrl) > 0 {
-		path := data.Filename[:idx] + ".png"
-		resty.New().R().SetOutput(path).Get(data.PicUrl)
+
+	if len(data.PicUrl) > 0 && data.PicProcess != nil {
+		data.PicProcess(data.PicUrl, data.Filename)
 	}
 
 	if d.onResult != nil {

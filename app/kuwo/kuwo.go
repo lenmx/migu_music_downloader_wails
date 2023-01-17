@@ -128,9 +128,11 @@ func (a *AppKuwo) OnDownload(sourceType string, downloadItemJson string) model.B
 		}
 		if downloadLrc {
 			queueItem.LrcUrl = a.core.GetLrcUrl(item.MusicId)
+			queueItem.LrcProcess = a.core.ProcessLrc
 		}
 		if downloadCover {
 			queueItem.PicUrl = a.core.GetPicUrl(item.MusicId)
+			queueItem.PicProcess = a.core.ProcessPic
 		}
 
 		a.downloader.Push(a.ctx, queueItem)
@@ -141,8 +143,8 @@ func (a *AppKuwo) OnDownload(sourceType string, downloadItemJson string) model.B
 }
 
 func (a *AppKuwo) onDownloadResult(res model.BaseResponse) {
-	item := res.Data.(model.DownloadQueueItem)
-	app.GApp.Log(fmt.Sprintf("[%s]%s", item.Name, res.Message))
+	//item := res.Data.(model.DownloadQueueItem)
+	app.GApp.Log(fmt.Sprintf("%+v", res))
 	a.pushDownloadResult(res)
 }
 

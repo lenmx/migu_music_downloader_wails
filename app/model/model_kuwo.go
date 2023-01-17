@@ -132,3 +132,18 @@ type KuwoGetMusicUrlRes struct {
 	CurTime   int64  `json:"curTime"`
 	Success   bool   `json:"success"`
 }
+
+type KuwoLrcRes struct {
+	Data   KuwoLrcResData `json:"data"`
+	Msg    string         `json:"msg"`
+	Status int            `json:"status"`
+}
+
+type KuwoLrcResData struct {
+	Lrclist []KuwoLrcResItem `json:"lrclist"`
+}
+
+type KuwoLrcResItem struct {
+	LineLyric string `json:"lineLyric"`
+	Time      string `json:"time"`
+}

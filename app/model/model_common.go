@@ -9,3 +9,7 @@ type SearchItemRes struct {
 	LrcUrl  string   `json:"lrcUrl"`
 	Cover   string   `json:"cover"`
 }
+
+type LrcProcessFn func(url, filename string)
+
+type PicProcessFn func(url, filename string)
