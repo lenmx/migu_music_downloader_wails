@@ -120,8 +120,7 @@ func (a *AppKuwo) OnDownload(sourceType string, downloadItemJson string) model.B
 			continue
 		}
 
-		filename := path.Join(savePath, item.MusicName+path.Ext(downloadUrl))
-		filename = util.FixWindowsFileName2Normal(filename)
+		filename := path.Join(savePath, util.FixWindowsFileName2Normal(item.MusicName)+path.Ext(downloadUrl))
 		queueItem := model.DownloadQueueItem{
 			MusicId:    item.MusicId,
 			Name:       item.MusicName,
