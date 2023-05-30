@@ -115,7 +115,7 @@ func (a *AppKuwo) OnDownload(sourceType string, downloadItemJson string) model.B
 	}
 
 	for _, item := range items {
-		downloadUrl := a.core.GetDownloadUrl(item.MusicId)
+		downloadUrl := a.core.GetDownloadUrl1(item.MusicId)
 		if downloadUrl == "" {
 			continue
 		}
